@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CivicPulse — AI Grievance Redressal Prototype</title>
+<style>
+  :root{
+    --navy:#0B2B33;
+    --navy-2:#0F3A41;
+    --teal:#028090;
+    --seafoam:#00A896;
+    --mint:#02C39A;
+    --offwhite:#F4F9F8;
+    --ink:#0B2B33;
+    --slate:#4A5C60;
+    --line:#D8E6E4;
+    --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--offwhite);
+    color:var(--ink);
+  }
+  header{
+    background:var(--navy);
+    color:var(--white);
+    padding:22px 36px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  header .brand{display:flex;align-items:center;gap:12px;}
+  header .logo{
+    width:38px;height:38px;border-radius:10px;background:var(--teal);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;
+  }
+  header h1{font-size:19px;margin:0;letter-spacing:.3px;}
+  header .tag{font-size:12px;color:#9FC9C4;margin-top:2px;}
+  nav{display:flex;gap:6px;}
+  nav button{
+    background:transparent;border:1px solid #1E4E55;color:#CADCDA;
+    padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;
+    transition:.15s;
+  }
+  nav button.active{background:var(--teal);color:#fff;border-color:var(--teal);}
+  nav button:hover:not(.active){border-color:var(--seafoam);color:#fff;}
+
+  main{max-width:1180px;margin:0 auto;padding:32px 36px 60px;}
+  .view{display:none;}
+  .view.active{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  h2{font-size:24px;margin:0 0 6px;}
+  .sub{color:var(--slate);font-size:14px;margin-bottom:26px;}
+
+  /* Submit view */
+  .card{
+    background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;
+  }
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--slate);margin:16px 0 6px;text-transform:uppercase;letter-spacing:.4px;}
+  label:first-child{margin-top:0;}
+  textarea,select,input[type=text]{
+    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;
+    font-size:14px;font-family:inherit;color:var(--ink);background:var(--offwhite);
+  }
+  textarea{resize:vertical;min-height:90px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .btn{
+    margin-top:22px;background:var(--teal);color:#fff;border:none;padding:13px 22px;
+    border-radius:8px;font-size:14.5px;font-weight:600;cursor:pointer;transition:.15s;
+  }
+  .btn:hover{background:var(--seafoam);}
+  .sample-btn{background:none;border:1px solid var(--line);color:var(--slate);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;margin-left:8px;}
+  .sample-btn:hover{border-color:var(--teal);color:var(--teal);}
+
+  /* Pipeline view */
+  .pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px;}
+  .step{
+    background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;
+    opacity:.35;transform:translateY(6px);transition:.4s;position:relative;min-height:150px;
+  }
+  .step.on{opacity:1;transform:translateY(0);border-color:var(--seafoam);box-shadow:0 4px 14px rgba(2,128,144,.12);}
+  .step .num{font-size:11px;color:var(--slate);font-weight:700;}
+  .step .icon{
+    width:38px;height:38px;border-radius:50%;background:var(--teal);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:16px;margin:8px 0 10px;
+  }
+  .step h4{margin:0 0 6px;font-size:13.5px;}
+  .step p{margin:0;font-size:11.5px;color:var(--slate);line-height:1.4;}
+  .empty-pipeline{
+    background:#fff;border:1px dashed var(--line);border-radius:12px;padding:60px 20px;text-align:center;color:var(--slate);font-size:14px;
+  }
+  .result{
+    background:var(--navy);color:#fff;border-radius:12px;padding:22px 26px;display:none;
+  }
+  .result.show{display:block;}
+  .result .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:14px;}
+  .result .grid div .k{font-size:11px;color:#9FC9C4;text-transform:uppercase;letter-spacing:.4px;}
+  .result .grid div .v{font-size:15px;font-weight:700;margin-top:3px;}
+  .result .msg{background:#0F3A41;border-radius:8px;padding:14px 16px;font-size:13px;color:#CADCDA;font-style:italic;margin-top:6px;}
+
+  /* Dashboard view */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px;}
+  .stat .n{font-size:28px;font-weight:700;color:var(--teal);}
+  .stat .l{font-size:12px;color:var(--slate);margin-top:4px;}
+  .panels{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px 22px;}
+  .panel h3{margin:0 0 14px;font-size:14px;}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12.5px;}
+  .bar-label{width:110px;color:var(--slate);flex-shrink:0;}
+  .bar-track{flex:1;background:var(--offwhite);border-radius:5px;height:10px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--teal);border-radius:5px;}
+  .ward-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
+  .ward-cell{
+    aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;
+    font-size:10px;color:#fff;font-weight:600;
+  }
+  .legend{display:flex;gap:14px;margin-top:12px;font-size:11px;color:var(--slate);align-items:center;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;}
+  th{text-align:left;color:var(--slate);font-weight:600;font-size:11px;text-transform:uppercase;padding:6px 4px;border-bottom:1px solid var(--line);}
+  td{padding:9px 4px;border-bottom:1px solid var(--line);}
+  .pill{padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;}
+  .pill.high{background:#FFE3E0;color:#C4433A;}
+  .pill.med{background:#FFF3D6;color:#B07C0E;}
+  .pill.low{background:#DFF3EE;color:#0B7A63;}
+
+  footer{text-align:center;padding:26px;color:var(--slate);font-size:11.5px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">C</div>
+    <div>
+      <h1>CivicPulse</h1>
+      <div class="tag">Agentic AI Grievance Redressal — Offline Prototype</div>
+    </div>
+  </div>
+  <nav>
+    <button class="active" data-view="submit">Submit Complaint</button>
+    <button data-view="pipeline">Agent Pipeline</button>
+    <button data-view="dashboard">Official Dashboard</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- SUBMIT VIEW -->
+  <section id="submit" class="view active">
+    <h2>File a grievance</h2>
+    <div class="sub">This form feeds directly into the live Intake Agent. Try the sample or write your own.</div>
+    <div class="card">
+      <label>Complaint description
+        <button class="sample-btn" onclick="loadSample()">Use sample complaint</button>
+      </label>
+      <textarea id="desc" placeholder="Describe the issue in your own words..."></textarea>
+      <div class="row2">
+        <div>
+          <label>Ward / area</label>
+          <select id="ward">
+            <option>Ward 4</option>
+            <option>Ward 7</option>
+            <option>Ward 9</option>
+            <option selected>Ward 12</option>
+            <option>Ward 15</option>
+          </select>
+        </div>
+        <div>
+          <label>Channel</label>
+          <select id="channel">
+            <option>WhatsApp</option>
+            <option>Web Form</option>
+            <option>Voice Call</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn" onclick="submitComplaint()">Submit to Agent Pipeline →</button>
+    </div>
+  </section>
+
+  <!-- PIPELINE VIEW -->
+  <section id="pipeline" class="view">
+    <h2>Agent pipeline — live run</h2>
+    <div class="sub">Each stage below is computed in real time by the rule-based agent logic in this prototype.</div>
+    <div id="pipelineEmpty" class="empty-pipeline">No complaint submitted yet. Go to "Submit Complaint" and run one through the pipeline.</div>
+    <div id="pipelineSteps" class="pipeline" style="display:none;"></div>
+    <div id="pipelineResult" class="result"></div>
+  </section>
+
+  <!-- DASHBOARD VIEW -->
+  <section id="dashboard" class="view">
+    <h2>Official dashboard</h2>
+    <div class="sub">Aggregated view across all tickets (seeded sample data + anything you submit).</div>
+
+    <div class="stats" id="statCards"></div>
+
+    <div class="panels">
+      <div class="panel">
+        <h3>Open tickets by category</h3>
+        <div id="catBars"></div>
+      </div>
+      <div class="panel">
+        <h3>Ward heatmap (open complaints)</h3>
+        <div class="ward-grid" id="wardGrid"></div>
+        <div class="legend">
+          <span><span class="dot" style="background:#DFF3EE"></span>Low</span>
+          <span><span class="dot" style="background:#02C39A"></span>Medium</span>
+          <span><span class="dot" style="background:#0B2B33"></span>High</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:18px;">
+      <h3>Recent tickets</h3>
+      <table>
+        <thead><tr><th>ID</th><th>Category</th><th>Ward</th><th>Severity</th><th>Status</th></tr></thead>
+        <tbody id="ticketRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer>CivicPulse Prototype · Innovik Hackathon · Team Catalyst — runs fully offline, no API keys required</footer>
+
+<script>
+/* ---------------- Nav ---------------- */
+document.querySelectorAll('nav button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.view).classList.add('active');
+    if(btn.dataset.view==='dashboard') renderDashboard();
+  });
+});
+
+/* ---------------- Mock "AI Agent" logic ---------------- */
+const CATEGORY_RULES = [
+  { cat:'Sanitation', dept:'Sanitation Dept.', keywords:['sewage','garbage','trash','drain','waste','overflow'] },
+  { cat:'Water Supply', dept:'Water Board', keywords:['water','pipeline','leak','tap','supply'] },
+  { cat:'Roads', dept:'Public Works Dept.', keywords:['pothole','road','street','pavement','footpath'] },
+  { cat:'Electricity', dept:'Electricity Board', keywords:['streetlight','power','electricity','transformer','wire'] },
+  { cat:'Public Safety', dept:'Municipal Safety Cell', keywords:['unsafe','danger','accident','stray','harassment'] },
+];
+const HIGH_RISK_WORDS = ['school','children','kids','hospital','drinking','health','fire','injur','accident'];
+
+function classify(text){
+  const lower = text.toLowerCase();
+  let match = CATEGORY_RULES.find(r=>r.keywords.some(k=>lower.includes(k))) || {cat:'General', dept:'General Administration'};
+  const riskHit = HIGH_RISK_WORDS.some(w=>lower.includes(w));
+  let severity = riskHit ? 'High' : (lower.length > 120 ? 'Medium' : 'Low');
+  let urgency = riskHit ? (8.5 + Math.random()*1.4) : (severity==='Medium' ? 5+Math.random()*2 : 2+Math.random()*2.5);
+  return { category: match.cat, dept: match.dept, severity, urgency: urgency.toFixed(1) };
+}
+
+function slaFor(severity){
+  return severity==='High' ? '24 hours' : severity==='Medium' ? '3 days' : '7 days';
+}
+
+/* ---------------- Sample data ---------------- */
+const SAMPLE = "Sewage overflowing near the Ward 12 school gate, children can't walk past it safely and the smell is unbearable.";
+function loadSample(){ document.getElementById('desc').value = SAMPLE; document.getElementById('ward').value='Ward 12'; }
+
+let ticketSeq = 1042;
+let tickets = [
+  {id:'CP-1031',cat:'Sanitation',ward:'Ward 12',sev:'High',status:'In Progress'},
+  {id:'CP-1029',cat:'Roads',ward:'Ward 7',sev:'Medium',status:'Assigned'},
+  {id:'CP-1027',cat:'Water Supply',ward:'Ward 9',sev:'High',status:'In Progress'},
+  {id:'CP-1024',cat:'Electricity',ward:'Ward 4',sev:'Low',status:'Resolved'},
+  {id:'CP-1021',cat:'Roads',ward:'Ward 15',sev:'Medium',status:'Assigned'},
+  {id:'CP-1019',cat:'Sanitation',ward:'Ward 9',sev:'Medium',status:'In Progress'},
+];
+
+/* ---------------- Pipeline animation ---------------- */
+const STEPS = [
+  {icon:'💬', h:'Intake Agent', d:c=>`Captured via ${c.channel}, normalized into a structured ticket.`},
+  {icon:'🏷️', h:'Classify & Prioritize', d:c=>`Category: ${c.category} · Severity: ${c.severity} · Urgency ${c.urgency}/10`},
+  {icon:'📄', h:'Duplicate Check', d:c=>c.dup ? `Matched to existing ticket ${c.dup} — merged.` : `No matching open ticket found — new ticket created.`},
+  {icon:'📍', h:'Route & Escalate', d:c=>`Assigned to ${c.dept}. SLA: ${c.sla}.`},
+  {icon:'👥', h:'Citizen Update', d:c=>`Status message sent back to citizen automatically.`},
+];
+
+function submitComplaint(){
+  const desc = document.getElementById('desc').value.trim() || SAMPLE;
+  const ward = document.getElementById('ward').value;
+  const channel = document.getElementById('channel').value;
+  const result = classify(desc);
+  const dup = Math.random() < 0.25 ? tickets[Math.floor(Math.random()*tickets.length)].id : null;
+
+  const ctx = {...result, ward, channel, dup, sla: slaFor(result.severity)};
+
+  // switch to pipeline view
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.querySelector('[data-view="pipeline"]').classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('pipeline').classList.add('active');
+
+  document.getElementById('pipelineEmpty').style.display='none';
+  const wrap = document.getElementById('pipelineSteps');
+  wrap.style.display='grid';
+  wrap.innerHTML = STEPS.map((s,i)=>`
+    <div class="step" id="step-${i}">
+      <div class="num">STEP ${i+1}</div>
+      <div class="icon">${s.icon}</div>
+      <h4>${s.h}</h4>
+      <p>${s.d(ctx)}</p>
+    </div>`).join('');
+
+  document.getElementById('pipelineResult').classList.remove('show');
+
+  STEPS.forEach((s,i)=>{
+    setTimeout(()=>{
+      document.getElementById(`step-${i}`).classList.add('on');
+      if(i===STEPS.length-1){
+        setTimeout(()=>{
+          const newId = 'CP-'+(++ticketSeq);
+          if(!dup) tickets.unshift({id:newId,cat:result.category,ward,sev:result.severity,status:'Assigned'});
+          const res = document.getElementById('pipelineResult');
+          res.classList.add('show');
+          res.innerHTML = `
+            <div class="grid">
+              <div><div class="k">Ticket</div><div class="v">${dup || newId}</div></div>
+              <div><div class="k">Category</div><div class="v">${result.category}</div></div>
+              <div><div class="k">Severity</div><div class="v">${result.severity}</div></div>
+              <div><div class="k">SLA</div><div class="v">${ctx.sla}</div></div>
+            </div>
+            <div class="msg">"Your complaint has been ${dup?'merged with an existing ticket and':''} assigned to ${result.dept}. Expected action within ${ctx.sla}. You'll get a status update automatically — no follow-up call needed."</div>`;
+        }, 400);
+      }
+    }, i*450);
+  });
+}
+
+/* ---------------- Dashboard ---------------- */
+function renderDashboard(){
+  const open = tickets.filter(t=>t.status!=='Resolved').length;
+  const high = tickets.filter(t=>t.sev==='High').length;
+  const resolved = tickets.filter(t=>t.status==='Resolved').length;
+  document.getElementById('statCards').innerHTML = `
+    <div class="stat"><div class="n">${tickets.length}</div><div class="l">Total tickets</div></div>
+    <div class="stat"><div class="n">${open}</div><div class="l">Open tickets</div></div>
+    <div class="stat"><div class="n">${high}</div><div class="l">High severity (open)</div></div>
+    <div class="stat"><div class="n">${resolved}</div><div class="l">Resolved this week</div></div>`;
+
+  const cats = {};
+  tickets.forEach(t=>{ cats[t.cat]=(cats[t.cat]||0)+1; });
+  const max = Math.max(...Object.values(cats));
+  document.getElementById('catBars').innerHTML = Object.entries(cats).map(([c,n])=>`
+    <div class="bar-row">
+      <div class="bar-label">${c}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(n/max*100)}%"></div></div>
+      <div>${n}</div>
+    </div>`).join('');
+
+  const wards = ['Ward 4','Ward 7','Ward 9','Ward 12','Ward 15','Ward 18'];
+  document.getElementById('wardGrid').innerHTML = wards.map(w=>{
+    const n = tickets.filter(t=>t.ward===w && t.status!=='Resolved').length;
+    const color = n>=2 ? '#0B2B33' : n===1 ? '#02C39A' : '#DFF3EE';
+    const txt = n>=2 ? '#fff' : n===1 ? '#fff' : '#4A5C60';
+    return `<div class="ward-cell" style="background:${color};color:${txt}">${w.replace('Ward ','W')}</div>`;
+  }).join('');
+
+  document.getElementById('ticketRows').innerHTML = tickets.slice(0,8).map(t=>`
+    <tr>
+      <td>${t.id}</td><td>${t.cat}</td><td>${t.ward}</td>
+      <td><span class="pill ${t.sev.toLowerCase()}">${t.sev}</span></td>
+      <td>${t.status}</td>
+    </tr>`).join('');
+}
+renderDashboard();
+</script>
+</body>
+</html>
